@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>신생아 육아용품 정리 (카테고리·추천·구입처)</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* 색상 모음 */
+:root{--bg:#faf8f5;--card:#fff;--ink:#2b2622;--mute:#7a7068;--line:#e9e3db;--red:#d92d20;--redbg:#fef3f2;--ok:#2f7d4f;--okbg:#e8f5ec;--no:#8a5a00;--nobg:#fdf1d8;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans KR',system-ui,sans-serif;line-height:1.55}
+.wrap{max-width:980px;margin:0 auto;padding:24px 16px 60px}
+h1{font-size:26px;margin:0 0 6px}
+.sub{color:var(--mute);font-size:14px;margin:0 0 16px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:13px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:14px}
+.rec{color:var(--red);font-weight:700}
+.badge{display:inline-block;font-size:12px;padding:1px 8px;border-radius:10px;white-space:nowrap}
+.b-ok{background:var(--okbg);color:var(--ok)}
+.b-no{background:var(--nobg);color:var(--no)}
+.b-na{background:#eee;color:#777}
+/* 필터 버튼 줄 (스크롤해도 위에 고정) */
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;position:sticky;top:0;background:var(--bg);padding:8px 0;z-index:5}
+.filters button{border:1px solid var(--line);background:var(--card);padding:6px 14px;border-radius:20px;font:inherit;font-size:14px;cursor:pointer}
+.filters button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+section{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:18px;overflow:hidden}
+section h2{margin:0;padding:12px 16px;font-size:17px;background:#f4efe8;border-bottom:1px solid var(--line)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:12px;color:var(--mute);font-weight:500;padding:8px 12px;border-bottom:1px solid var(--line)}
+td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr.isrec td:first-child{background:var(--redbg)}
+.item{font-weight:500}
+.item.rec{font-weight:700}
+.note{color:var(--mute);font-size:13px}
+.tag{font-size:11px;color:#999;margin-left:4px}
+.warn{background:var(--redbg);border:1px solid #fecdca;border-radius:10px;padding:12px 16px;font-size:14px;margin-bottom:18px}
+.warn b{color:var(--red)}
+.src{font-size:13px;color:var(--mute);margin-top:24px}
+.src a{color:var(--mute)}
+.empty{padding:14px 16px;color:var(--mute);font-size:14px}
+/* 휴대폰 화면: 표를 카드 모양으로 바꿈 */
+@media(max-width:700px){
+ thead{display:none}
+ table,tbody,tr,td{display:block;width:100%}
+ tr{padding:10px 14px;border-bottom:1px solid var(--line)}
+ tr:last-child{border-bottom:none}
+ td{border:none;padding:2px 0}
+ tr.isrec td:first-child{background:none}
+ tr.isrec{background:var(--redbg)}
+ td[data-l]::before{content:attr(data-l)" · ";color:var(--mute);font-size:12px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>👶 신생아 육아용품 정리</h1>
+<p class="sub">내가 올린 목록(당근 가능 / 당근 불가 구분) + 후기 조사 + 추가 필수템 · 2026.11.15 정리</p>
+
+<div class="legend">
+ <span><span class="rec">빨간 글씨 ★</span> = 추천(꼭 사거나, 후기가 좋았던 용품)</span>
+ <span><span class="badge b-ok">당근 O</span> 중고 구매 가능</span>
+ <span><span class="badge b-no">당근 X</span> 새제품 권장</span>
+ <span><span class="badge b-na">추가</span> 올린 목록에 없던 항목</span>
+</div>
+
+<div class="warn"><b>안전 주의</b> · 카시트는 제조일 5년 이내 + 사고이력 확인이 어려워 <b>메인 카시트는 신품 권장</b>(바구니형만 중고 고려) · 신생아 <b>목튜브(목 두르는 튜브)는 사용 자제</b> 권고 · 방 온도는 22~24도 유지 · 가격·재고는 구매 전에 직접 확인하세요.</div>
+
+<div class="filters" id="filters">
+ <button data-f="all" class="on">전체</button>
+ <button data-f="rec">★ 추천만</button>
+ <button data-f="O">당근 O</button>
+ <button data-f="X">당근 X(새제품)</button>
+</div>
+
+<div id="root"></div>
+
+<p class="src">조사 방법: 네이버·유튜브 페이지를 직접 열람하지는 못했고, 웹 검색으로 확인되는 후기·커뮤니티 글(맘카페형 후기 사이트 mom-mom.net, 오늘의집 후기, 블라인드·클리앙 육아 게시판, 베이비뉴스 등)을 기준으로 정리했습니다. 브랜드는 후기에서 자주 언급된 제품 위주이며 광고·협찬 여부는 확인되지 않았습니다. 구입처는 일반적인 온라인 몰 기준이고, 가격은 포함하지 않았습니다.</p>
+</div>
+
+<script>
+// 데이터 한 줄의 순서: [카테고리, 품목, 당근(O/X/-), 추천(1/0), 제조사·브랜드, 구입처, 메모]
+const S_ON="쿠팡 · 네이버쇼핑 · 브랜드 공식몰";
+const D=[
+// 1. 수유
+["🍼 수유 · 분유 (맘마존)","젖병 (160ml/240ml)","X",1,"마더케이(더블하트), 랜시노(유리), 아가방(유리)",S_ON,"처음엔 2~3개만 사서 아기와 맞는지 확인 후 추가"],
+["🍼 수유 · 분유 (맘마존)","젖꼭지 (신생아용)","X",1,"마더케이 더블하트 등 젖병 호환형",S_ON,"젖병과 호환 여부 꼭 확인"],
+["🍼 수유 · 분유 (맘마존)","쪽쪽이 (동글이/납작이)","X",0,"스와들업 등",S_ON,"호불호가 있어 두 형태 소량만 먼저 구매"],
+["🍼 수유 · 분유 (맘마존)","치발기","X",0,"메디토이(코끼리 치발기)",S_ON,"3~4개월 이후 필요, 급하지 않음"],
+["🍼 수유 · 분유 (맘마존)","분유포트","X",1,"보르르, 리웨이, 가치(유리)",S_ON,"100도로 끓인 뒤 40~45도 유지, 새벽 수유에 필수"],
+["🍼 수유 · 분유 (맘마존)","분유 쉐이커","O",1,"드림비",S_ON+" · 당근","손목 부담↓, 거품이 적어 배앓이 예방에 도움"],
+["🍼 수유 · 분유 (맘마존)","분유 보온병","X",0,"제품별 후기 비교 후 선택",S_ON,"외출·새벽 수유 보조"],
+["🍼 수유 · 분유 (맘마존)","자동분유제조기","-",0,"베이비브레짜",S_ON+" · 당근","고가라 선택 항목. 깔때기 세척 필요, 되팔기 쉬움 (추가)"],
+["🍼 수유 · 분유 (맘마존)","젖병 소독기 (UV/스팀)","O",1,"유팡(UV 건조), 스펙트라, 폴레드, 베이비브레짜",S_ON+" · 당근","모유수유여도 유축 젖병에 유용. 부엌 크기 보고 사이즈 선택"],
+["🍼 수유 · 분유 (맘마존)","젖병 세척기","X",0,"제품별 후기 비교 후 선택",S_ON,"없어도 되나 새벽 수유 때 편함"],
+["🍼 수유 · 분유 (맘마존)","젖병 세정제 · 세척솔 · 건조대","-",1,"브랜드 다양",S_ON,"(추가) 필수 소모품"],
+["🍼 수유 · 분유 (맘마존)","720도 회전 수전","-",0,"제품별 비교",S_ON,"주방 젖병 세척용 (목록 항목, 설치 가능 여부 확인)"],
+["🍼 수유 · 분유 (맘마존)","수유쿠션","O",1,"브랜드 다양",S_ON+" · 당근","커버는 새로 구매하면 위생적"],
+["🍼 수유 · 분유 (맘마존)","수유시트","O",0,"브랜드 다양",S_ON+" · 당근","자세 보조용"],
+["🍼 수유 · 분유 (맘마존)","역류방지쿠션","O",1,"제이앤제나, 로토토",S_ON+" · 당근","방수커버 제품은 중고로도 무난"],
+["🍼 수유 · 분유 (맘마존)","유축기","X",0,"스펙트라",S_ON+" · 렌탈","모유수유 계획이면 필요. 대여도 가능"],
+["🍼 수유 · 분유 (맘마존)","휴대용 유축기","X",0,"제품별 비교",S_ON,"외출·직장복귀 계획 있을 때"],
+// 2. 위생 · 목욕
+["🛁 기저귀 · 위생 · 목욕","기저귀 (신생아용)","-",1,"브랜드별 소량 샘플부터",S_ON,"(추가) 아기마다 맞는 브랜드 달라 소량 구매 후 대량 구매"],
+["🛁 기저귀 · 위생 · 목욕","물티슈 (순한 제품)","-",1,"브랜드 다양",S_ON,"(추가) 성분표 확인"],
+["🛁 기저귀 · 위생 · 목욕","기저귀 갈이대","O",1,"브랜드 다양",S_ON+" · 당근","수납형이면 활용도↑"],
+["🛁 기저귀 · 위생 · 목욕","기저귀 휴지통 (쓰레기통)","X",1,"매직캔 히포2",S_ON,"냄새 차단. 전용 리필 필요 여부 확인"],
+["🛁 기저귀 · 위생 · 목욕","기저귀 발진 크림","-",1,"로하스베베",S_ON,"(추가)"],
+["🛁 기저귀 · 위생 · 목욕","아기욕조","X",1,"브랜드 다양",S_ON,"위생·요로감염 우려로 새제품 권장 (올린 목록 기준)"],
+["🛁 기저귀 · 위생 · 목욕","로션 · 보습제 · 바디워시","-",1,"아토앤오투, 몽디에스, 닥터바이오 등",S_ON,"(추가) 태열이면 수딩젤(아토팜 등) 추가"],
+["🛁 기저귀 · 위생 · 목욕","바스타월 · 가제 손수건","-",1,"밤부(대나무) 소재 가제 등",S_ON,"(추가) 천기저귀 5장 정도로 대체 활용 가능"],
+["🛁 기저귀 · 위생 · 목욕","손톱가위 · 면봉 · 물온도계","-",0,"브랜드 다양",S_ON,"(추가)"],
+// 3. 의류 · 침구 · 수면
+["🛏 의류 · 침구 · 수면","배냇저고리 · 바디수트","-",1,"60~80 사이즈",S_ON,"(추가) 병원·조리원 제공 여부 확인 후 부족분만. 사이즈 여유 있게"],
+["🛏 의류 · 침구 · 수면","우주복 · 손싸개 · 양말 · 모자","-",0,"브랜드 다양",S_ON,"(추가) 외출용 2벌, 손싸개 3~4개"],
+["🛏 의류 · 침구 · 수면","속싸개 · 스와들","-",1,"스와들업, 나비잠",S_ON,"(추가) 모로반사 방지로 숙면에 도움"],
+["🛏 의류 · 침구 · 수면","방수요","-",1,"브랜드 다양",S_ON,"(추가) 중·대 각 1장씩, 세탁 대비 2~3장"],
+["🛏 의류 · 침구 · 수면","얇은 블랭킷 · 수면조끼","-",0,"도노도노 등",S_ON,"(추가) 두꺼운 이불은 위험, 얇은 블랭킷+난방 조절"],
+["🛏 의류 · 침구 · 수면","아기침대","O",0,"다이치(올린 목록), 리틀시드(폴딩)",S_ON+" · 당근","사용 기간이 짧아 중고 추천. 매트리스는 단단한 것"],
+["🛏 의류 · 침구 · 수면","백색소음기","O",0,"브랜드 다양",S_ON+" · 당근","호불호 있어 중고로 시험 사용 좋음"],
+["🛏 의류 · 침구 · 수면","머리쿵 보호대","O",0,"브랜드 다양",S_ON+" · 당근","뒤집기·걸음마 시기용, 급하지 않음"],
+["🛏 의류 · 침구 · 수면","온습도계","-",1,"브랜드 다양",S_ON,"(추가) 방 온도 22~24도 확인"],
+// 4. 외출
+["🚗 외출 · 이동","카시트 (바구니형/신생아 겸용)","O",1,"다이치(원픽스360), 브라이텍스, 싸이벡스, 맥시코시",S_ON+" · 육아박람회","퇴원길 필수(법적 의무). 제조일 5년 이내 확인, 메인 카시트는 신품 권장, 바구니형은 당근 고려"],
+["🚗 외출 · 이동","카시트 후방거울","O",0,"브랜드 다양",S_ON+" · 당근","아기 얼굴 확인용"],
+["🚗 외출 · 이동","카시트 보호매트","X",0,"브랜드 다양",S_ON,"시트 손상 방지용"],
+["🚗 외출 · 이동","디럭스 유모차","O",0,"제품별 비교(박람회 특가 활용)",S_ON+" · 당근 · 박람회","고가라 중고·박람회 특가 활용. 신생아는 눕는 각도 필수"],
+["🚗 외출 · 이동","휴대용 유모차","X",0,"제품별 비교",S_ON,"디럭스와 병행 시 가벼운 외출용"],
+["🚗 외출 · 이동","유모차 라이너","X",0,"브랜드 다양",S_ON,"계절별 시트 보호"],
+["🚗 외출 · 이동","유모차 모빌","O",0,"브랜드 다양",S_ON+" · 당근","목록에 중복 표기돼 있어 O로 정리 (재확인 필요)"],
+["🚗 외출 · 이동","아기띠","-",1,"브랜드 다양",S_ON,"(추가) 신생아 인서트·목 가누기 전 사용 가능 여부, M자 자세 확인"],
+["🚗 외출 · 이동","기저귀 가방","-",0,"브랜드 다양",S_ON,"(추가)"],
+// 5. 놀이 · 발달
+["🧸 놀이 · 발달","아기 모빌","O",0,"타이니모빌, 세이지폴(원목)",S_ON+" · 당근","플라스틱은 세척 후 사용"],
+["🧸 놀이 · 발달","바운서","O",0,"브랜드 다양",S_ON+" · 당근","신생아 진정용으로 많이 사용"],
+["🧸 놀이 · 발달","아기체육관","O",0,"피셔프라이스, 하베브릭스",S_ON+" · 당근","일반·디럭스 차이는 건반 등 일부 구성"],
+["🧸 놀이 · 발달","에듀테이블","O",0,"코니스",S_ON+" · 당근","6개월 이후 사용, 서두를 필요 없음"],
+["🧸 놀이 · 발달","놀이매트","X",0,"브랜드 다양",S_ON,"소재·인증 확인"],
+["🧸 놀이 · 발달","헝겊책 · 오볼 · 튤립북(사운드북)","X",0,"예림당(튤립북), Oball 등",S_ON,"초점책(애플비)은 조리원 교육·사은품으로 대체 가능"],
+["🧸 놀이 · 발달","딸랑이","-",0,"압소바 등",S_ON,"(추가)"],
+// 6. 안전 · 건강
+["🩺 안전 · 건강","체온계","-",1,"브랜드 다양(귀·이마 비접촉)",S_ON,"(추가) 필수"],
+["🩺 안전 · 건강","콧물 흡입기","-",1,"브랜드 다양",S_ON,"(추가)"],
+["🩺 안전 · 건강","가습기 · 공기청정기","-",0,"브랜드 다양",S_ON,"(추가) 가습기는 매일 세척 필수"],
+["🩺 안전 · 건강","베이비 CCTV (모니터)","X",0,"제품별 비교",S_ON,"보안 설정(비밀번호·펌웨어) 꼭 확인, 중고 비권장"],
+["🩺 안전 · 건강","상비약 · 예방접종 수첩","-",1,"소아과 처방 기준",S_ON+" · 약국","(추가) 해열제는 소아과 안내에 따라"],
+];
+
+const root=document.getElementById('root');
+let filter='all'; // 지금 선택된 필터
+// 당근 구분에 맞는 배지 만들기
+function badge(u){return u==='O'?'<span class="badge b-ok">당근 O</span>':u==='X'?'<span class="badge b-no">당근 X</span>':'<span class="badge b-na">추가</span>'}
+// 글자에 섞인 특수문자를 안전하게 바꾸기
+function esc(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+// 필터에 맞는 항목만 골라 카테고리별 표로 그리기
+function render(){
+  const cats=[...new Set(D.map(r=>r[0]))];
+  root.innerHTML='';
+  let any=false;
+  cats.forEach(c=>{
+    let rows=D.filter(r=>r[0]===c);
+    rows=rows.filter(r=>filter==='all'||(filter==='rec'&&r[3])||(filter==='O'&&r[2]==='O')||(filter==='X'&&r[2]==='X'));
+    if(!rows.length)return;
+    any=true;
+    const sec=document.createElement('section');
+    sec.innerHTML='<h2>'+c+' <span class="note">('+rows.length+')</span></h2><table><thead><tr><th>품목</th><th>구분</th><th>제조사 · 브랜드</th><th>구입처</th><th>메모</th></tr></thead><tbody>'+
+    rows.map(r=>'<tr class="'+(r[3]?'isrec':'')+'"><td><span class="item '+(r[3]?'rec':'')+'">'+(r[3]?'★ ':'')+esc(r[1])+'</span></td><td data-l="구분">'+badge(r[2])+'</td><td data-l="브랜드">'+esc(r[4])+'</td><td data-l="구입처">'+esc(r[5])+'</td><td class="note">'+esc(r[6])+'</td></tr>').join('')+'</tbody></table>';
+    root.appendChild(sec);
+  });
+  if(!any)root.innerHTML='<div class="empty">해당 항목이 없습니다.</div>';
+}
+// 필터 버튼을 누르면 다시 그리기
+document.getElementById('filters').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  filter=b.dataset.f;
+  document.querySelectorAll('#filters button').forEach(x=>x.classList.toggle('on',x===b));
+  render();
+});
+render();
+</script>
+</body>
+</html>
