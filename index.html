@@ -53,6 +53,10 @@ tr.isrec td:first-child{background:var(--redbg)}
 .tools button{border:1px solid var(--line);background:var(--card);padding:6px 14px;border-radius:20px;font:inherit;font-size:13px;cursor:pointer}
 .tools button:hover{background:#f4efe8}
 #d2A{display:block;width:100%;margin-top:10px;border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit;font-size:12px;word-break:break-all;resize:vertical}
+#d2R{display:block;margin-top:10px;font-size:13px;color:var(--mute);white-space:normal}
+#d2R[hidden]{display:none}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;z-index:20;opacity:0;pointer-events:none;transition:opacity .2s;max-width:calc(100% - 32px)}
+#toast.show{opacity:1}
 /* 항목 추가 · 삭제 */
 .del{width:26px;height:26px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--mute);cursor:pointer;font-size:12px;line-height:1;padding:0}
 .del:hover{background:var(--redbg);color:var(--red);border-color:#fecdca}
@@ -121,13 +125,14 @@ dialog::backdrop{background:rgba(43,38,34,.4)}
 <div class="tools">
  <button id="btnCopy">🔗 저장 링크 복사</button>
  <button id="btnPaste">📥 링크 붙여넣어 불러오기</button>
- <span class="note">내용이 지워질 때를 대비해, 복사한 링크를 메모장이나 카톡에 보관해 두세요.</span>
+ <span class="note">복사한 링크를 보관하거나 다른 사람에게 보내세요. 상대가 고친 뒤 다시 보내준 링크를 열면 내 내용과 합쳐집니다.</span>
 </div>
+<div id="toast" role="status"></div>
 
 <!-- 링크 복사 · 붙여넣기 팝업 -->
 <dialog id="dlg2">
  <div class="dlg-h" id="d2T"></div>
- <div class="dlg-b"><div id="d2M"></div><textarea id="d2A" rows="5" aria-label="저장 링크"></textarea></div>
+ <div class="dlg-b"><div id="d2M"></div><textarea id="d2A" rows="5" aria-label="저장 링크"></textarea><label id="d2R"><input type="checkbox" id="d2C"> 합치지 않고 링크 내용으로 통째로 바꾸기</label></div>
  <div class="dlg-f"><button id="d2Go" class="pri"></button><button id="d2X">닫기</button></div>
 </dialog>
 
@@ -220,7 +225,8 @@ try{state=JSON.parse(localStorage.getItem(KEY))||{}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
 // i번째 품목의 현재 값 (구분 g, 브랜드 b, 구입처 s, 메모 m). 구분은 처음엔 원래 목록 값을 쓴다
 function get(i){const r=L[i].r,s=state[L[i].k]||{};return{g:s.g!==undefined?s.g:(r[2]==='-'?'':r[2]),b:s.b||'',s:s.s||'',m:s.m||''}}
-function set(i,f,v){state[L[i].k]=Object.assign(get(i),{[f]:v});save()}
+// 값을 바꿀 때 고친 시각(t)도 같이 적어 둔다 → 두 사람의 내용을 합칠 때 더 나중에 고친 쪽을 고른다
+function set(i,f,v){state[L[i].k]=Object.assign(get(i),{[f]:v,t:Date.now()});save()}
 // 화면에 쓸 전체 목록 L = 기본 품목 + 내가 추가한 품목 (k는 저장용 이름표, ex는 예시가 있는지)
 const CATS=[...new Set(D.map(r=>r[0]))];
 let L=[];
@@ -228,7 +234,8 @@ function build(){
   L=D.map(r=>({k:r[1],r:r,ex:true})).concat((state._add||[]).map(a=>({k:'c:'+a.id,r:[a.c,a.n,'-',0,'','',''],ex:false,id:a.id})));
 }
 build();
-function gone(i){return !!(state._del&&state._del[L[i].k])} // 삭제한 품목인지
+// 삭제한 품목인지. _del 값은 시각이며, 양수면 삭제한 상태, 음수면 되살린 상태
+function gone(i){return !!(state._del&&state._del[L[i].k]>0)}
 // 글자에 섞인 특수문자를 안전하게 바꾸기
 function esc(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 // 구분 선택 상자 만들기
@@ -275,16 +282,17 @@ function addItem(ci,box){
 function delItem(i){
   const it=L[i];
   if(!confirm("'"+it.r[1]+"' 항목을 삭제할까요?\n(카테고리 아래 추천에 남아 다시 추가할 수 있습니다)"))return;
-  (state._del=state._del||{})[it.k]=1;
+  (state._del=state._del||{})[it.k]=Date.now();
   save();render();
 }
 // 추천에서 다시 목록으로 되돌리기
-function backItem(i){delete state._del[L[i].k];save();render()}
+function backItem(i){state._del[L[i].k]=-Date.now();save();render()}
 // 내가 추가했던 항목을 추천에서도 완전히 지우기
 function killItem(i){
   const it=L[i];
   if(!confirm("'"+it.r[1]+"' 항목을 완전히 지울까요? 되돌릴 수 없습니다."))return;
   state._add=(state._add||[]).filter(a=>a.id!==it.id);delete state[it.k];delete state._del[it.k];
+  (state._kill=state._kill||{})[it.id]=Date.now(); // 합칠 때 다시 살아나지 않게 기록
   save();build();render();
 }
 root.addEventListener('click',e=>{
@@ -339,17 +347,60 @@ document.getElementById('filters').addEventListener('click',e=>{
 function enc(o){let s='';new TextEncoder().encode(JSON.stringify(o)).forEach(x=>s+=String.fromCharCode(x));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 function dec(t){const s=atob(t.replace(/-/g,'+').replace(/_/g,'/'));return JSON.parse(new TextDecoder().decode(Uint8Array.from(s,c=>c.charCodeAt(0))))}
 function makeLink(){return location.href.split('#')[0]+'#d='+enc(state)}
-// 링크(글자) 안의 내용을 꺼내 화면에 적용. 결과: 'ok' 적용함 / 'cancel' 취소함 / 'bad' 올바른 링크가 아님
-function applyLink(txt,ask){
+// 두 목록 합치기 (a: 지금 내 내용, b: 링크의 내용). 항목마다 더 나중에 고친 쪽을 남기고, 시각이 같으면 링크 쪽을 쓴다
+function merge(a,b){
+  const o={},kill=Object.assign({},a._kill,b._kill),seen={},add=[],del={};
+  // 추가한 품목: 양쪽 것을 모두 모으되, 완전히 지운 것은 뺀다
+  (a._add||[]).concat(b._add||[]).forEach(x=>{if(x&&x.id&&!seen[x.id]&&!kill[x.id]){seen[x.id]=1;add.push(x)}});
+  // 삭제·되살림 기록: 더 나중 것을 따른다
+  [a._del||{},b._del||{}].forEach((src,n)=>{for(const k in src){const v=+src[k]||0,p=Math.abs(del[k]||0);if(!(k in del)||Math.abs(v)>p||(n&&Math.abs(v)===p))del[k]=v}});
+  // 품목별 입력 내용
+  new Set(Object.keys(a).concat(Object.keys(b))).forEach(k=>{
+    if(k[0]==='_')return;
+    const x=a[k],y=b[k];
+    o[k]=!x?y:!y?x:((y.t||0)>=(x.t||0)?y:x);
+  });
+  for(const id in kill){delete o['c:'+id];delete del['c:'+id]}
+  if(add.length)o._add=add;
+  if(Object.keys(del).length)o._del=del;
+  if(Object.keys(kill).length)o._kill=kill;
+  return o;
+}
+// 어떤 목록(st)에서 품목 k가 화면에 보이는 값 (입력한 적 없으면 기본값)
+function eff(st,k){
+  const s=st[k]||{},r=D.find(x=>x[1]===k),g0=r&&r[2]!=='-'?r[2]:'';
+  return [s.g!==undefined?s.g:g0,s.b||'',s.s||'',s.m||''];
+}
+// 두 목록에서 서로 다른 칸이 몇 군데인지 세기
+function diffCount(a,b){
+  let n=0;const j=x=>JSON.stringify(x===undefined?null:x);
+  new Set(Object.keys(a).concat(Object.keys(b))).forEach(k=>{
+    if(k==='_kill')return;
+    if(k==='_del'){const p=a._del||{},q=b._del||{};new Set(Object.keys(p).concat(Object.keys(q))).forEach(d=>{if((p[d]>0)!==(q[d]>0))n++})}
+    else if(k==='_add'){const ids=x=>(x._add||[]).map(v=>v.id);const p=ids(a),q=ids(b);n+=p.filter(v=>q.indexOf(v)<0).length+q.filter(v=>p.indexOf(v)<0).length}
+    else if(j(eff(a,k))!==j(eff(b,k)))n++;
+  });
+  return n;
+}
+let lastN=0; // 방금 불러오기로 바뀐 곳의 개수
+// 링크(글자) 안의 내용을 꺼내 화면에 적용. replace가 참이면 합치지 않고 통째로 바꾼다
+// 결과: 'ok' 적용함 / 'same' 바뀔 것이 없음 / 'cancel' 취소함 / 'bad' 올바른 링크가 아님
+function applyLink(txt,ask,replace){
   const m=/#d=([A-Za-z0-9_-]+)/.exec(txt);if(!m)return 'bad';
   let o;try{o=dec(m[1])}catch(e){return 'bad'}
   if(!o||typeof o!=='object'||Array.isArray(o))return 'bad';
   if(!Array.isArray(o._add))delete o._add;
-  if(o._del&&typeof o._del!=='object')delete o._del;
-  if(ask&&Object.keys(state).length&&JSON.stringify(state)!==JSON.stringify(o)&&!confirm('지금 화면의 내용을 링크에 담긴 내용으로 바꿀까요?'))return 'cancel';
-  state=o;save();build();render();return 'ok';
+  ['_del','_kill'].forEach(k=>{if(o[k]&&(typeof o[k]!=='object'||Array.isArray(o[k])))delete o[k]});
+  const next=replace?o:merge(state,o);
+  lastN=diffCount(state,next);
+  if(!lastN)return 'same';
+  if(ask&&Object.keys(state).length&&!confirm(replace?'지금 화면의 내용을 지우고 링크에 담긴 내용으로 통째로 바꿀까요?':'링크의 내용을 지금 내용과 합칠까요?\n바뀌는 곳: '+lastN+'군데 (항목마다 더 나중에 고친 쪽이 남습니다)'))return 'cancel';
+  state=next;save();build();render();return 'ok';
 }
-const dlg2=document.getElementById('dlg2'),d2A=document.getElementById('d2A'),d2M=document.getElementById('d2M'),d2Go=document.getElementById('d2Go');
+// 화면 아래에 잠깐 떴다 사라지는 알림
+let toastT=0;
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),5000)}
+const dlg2=document.getElementById('dlg2'),d2A=document.getElementById('d2A'),d2M=document.getElementById('d2M'),d2Go=document.getElementById('d2Go'),d2R=document.getElementById('d2R'),d2C=document.getElementById('d2C');
 let mode='copy';
 function copyNow(){
   d2A.select();
@@ -360,27 +411,30 @@ function copyNow(){
 document.getElementById('btnCopy').addEventListener('click',()=>{
   mode='copy';
   document.getElementById('d2T').textContent='🔗 저장 링크 복사';
-  d2A.value=makeLink();d2A.readOnly=true;d2Go.textContent='다시 복사';d2M.textContent='';
+  d2A.value=makeLink();d2A.readOnly=true;d2Go.textContent='다시 복사';d2M.textContent='';d2R.hidden=true;
   dlg2.showModal();copyNow();
 });
 document.getElementById('btnPaste').addEventListener('click',()=>{
   mode='paste';
   document.getElementById('d2T').textContent='📥 링크 붙여넣어 불러오기';
-  d2A.value='';d2A.readOnly=false;d2Go.textContent='불러오기';
-  d2M.textContent='보관해 둔 저장 링크를 아래 칸에 붙여넣고 [불러오기]를 누르세요.';
+  d2A.value='';d2A.readOnly=false;d2Go.textContent='불러오기';d2R.hidden=false;d2C.checked=false;
+  d2M.textContent='보관해 둔 링크나 다른 사람이 고쳐서 보내준 링크를 아래 칸에 붙여넣고 [불러오기]를 누르세요. 지금 내용과 합쳐지며, 같은 항목은 더 나중에 고친 쪽이 남습니다.';
   dlg2.showModal();d2A.focus();
 });
 d2Go.addEventListener('click',()=>{
   if(mode==='copy'){copyNow();return}
-  const r=applyLink(d2A.value,true);
-  if(r==='ok')dlg2.close();
+  const r=applyLink(d2A.value,true,d2C.checked);
+  if(r==='ok'){dlg2.close();toast('링크의 내용을 반영했습니다 · 바뀐 곳 '+lastN+'군데')}
+  else if(r==='same')d2M.textContent='지금 내용과 다른 점이 없어 바뀐 것이 없습니다.';
   else if(r==='bad')d2M.textContent='올바른 저장 링크가 아닙니다. 링크 전체를 빠짐없이 붙여넣었는지 확인해 주세요.';
 });
 document.getElementById('d2X').addEventListener('click',()=>dlg2.close());
 dlg2.addEventListener('click',e=>{if(e.target===dlg2)dlg2.close()});
 // 저장 링크로 바로 접속한 경우: 링크의 내용을 불러오고 주소창은 원래 주소로 정리
 if(location.hash.indexOf('#d=')===0){
-  applyLink(location.hash,true);
+  const r=applyLink(location.hash,true);
+  if(r==='ok')toast('링크의 내용을 반영했습니다 · 바뀐 곳 '+lastN+'군데');
+  else if(r==='same')toast('링크의 내용이 지금 내용과 같습니다');
   try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}
 }
 render();
