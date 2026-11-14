@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 /* 색상 모음 */
-:root{--bg:#faf8f5;--card:#fff;--ink:#2b2622;--mute:#7a7068;--line:#e9e3db;--red:#d92d20;--redbg:#fef3f2;--ok:#2f7d4f;--okbg:#e8f5ec;--no:#8a5a00;--nobg:#fdf1d8;}
+:root{--bg:#faf8f5;--card:#fff;--ink:#2b2622;--mute:#7a7068;--line:#e9e3db;--red:#d92d20;--redbg:#fef3f2;--ok:#2f7d4f;--okbg:#e8f5ec;--no:#8a5a00;--nobg:#fdf1d8;--buy:#1d5fa8;--buybg:#e6f0fb;}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans KR',system-ui,sans-serif;line-height:1.55}
 .wrap{max-width:980px;margin:0 auto;padding:24px 16px 60px}
@@ -39,6 +39,34 @@ tr.isrec td:first-child{background:var(--redbg)}
 .src{font-size:13px;color:var(--mute);margin-top:24px}
 .src a{color:var(--mute)}
 .empty{padding:14px 16px;color:var(--mute);font-size:14px}
+/* 직접 입력 칸 */
+.cell{display:flex;gap:6px;align-items:center}
+.inp{flex:1;width:100%;min-width:0;border:1px solid var(--line);border-radius:6px;padding:5px 8px;font:inherit;font-size:13px;background:#fff;color:var(--ink)}
+.inp::placeholder{color:#b9b0a6}
+.sel{border:1px solid var(--line);border-radius:14px;padding:4px 8px;font:inherit;font-size:12px;background:#eee;color:#777;cursor:pointer}
+.sel.g-O{background:var(--okbg);color:var(--ok)}
+.sel.g-X{background:var(--nobg);color:var(--no)}
+.sel.g-B{background:var(--buybg);color:var(--buy)}
+.b-buy{background:var(--buybg);color:var(--buy)}
+/* 항목 추가 · 삭제 */
+.del{width:26px;height:26px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--mute);cursor:pointer;font-size:12px;line-height:1;padding:0}
+.del:hover{background:var(--redbg);color:var(--red);border-color:#fecdca}
+.delc{width:1%;white-space:nowrap}
+.addrow{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--line);background:#fcfaf7}
+.addbtn,.restore button{flex:none;border:1px solid var(--line);background:var(--card);padding:5px 14px;border-radius:20px;font:inherit;font-size:13px;cursor:pointer;white-space:nowrap}
+.addbtn:hover,.restore button:hover{background:#f4efe8}
+.restore{text-align:center;margin-bottom:18px}
+/* 예시 보기 아이콘과 팝업 */
+.ex{flex:none;width:26px;height:26px;border-radius:50%;border:1px solid var(--line);background:#f4efe8;cursor:pointer;font-size:13px;line-height:1;padding:0}
+.ex:hover{background:#eadfce}
+dialog{border:1px solid var(--line);border-radius:12px;padding:0;max-width:420px;width:calc(100% - 32px);color:var(--ink)}
+dialog::backdrop{background:rgba(43,38,34,.4)}
+.dlg-h{padding:12px 16px;background:#f4efe8;border-bottom:1px solid var(--line);font-weight:700;font-size:15px}
+.dlg-h small{display:block;font-weight:400;color:var(--mute);font-size:12px}
+.dlg-b{padding:14px 16px;font-size:14px;white-space:pre-wrap}
+.dlg-f{display:flex;justify-content:flex-end;gap:8px;padding:0 16px 14px}
+.dlg-f button{border:1px solid var(--line);background:var(--card);padding:6px 14px;border-radius:20px;font:inherit;font-size:13px;cursor:pointer}
+.dlg-f button.pri{background:var(--ink);color:#fff;border-color:var(--ink)}
 /* 휴대폰 화면: 표를 카드 모양으로 바꿈 */
 @media(max-width:700px){
  thead{display:none}
@@ -48,6 +76,8 @@ tr.isrec td:first-child{background:var(--redbg)}
  td{border:none;padding:2px 0}
  tr.isrec td:first-child{background:none}
  tr.isrec{background:var(--redbg)}
+ tr{position:relative}
+ td.delc{position:absolute;top:8px;right:12px;width:auto}
  td[data-l]::before{content:attr(data-l)" · ";color:var(--mute);font-size:12px}
 }
 </style>
@@ -61,7 +91,8 @@ tr.isrec td:first-child{background:var(--redbg)}
  <span><span class="rec">빨간 글씨 ★</span> = 추천(꼭 사거나, 후기가 좋았던 용품)</span>
  <span><span class="badge b-ok">당근 O</span> 중고 구매 가능</span>
  <span><span class="badge b-no">당근 X</span> 새제품 권장</span>
- <span><span class="badge b-na">추가</span> 올린 목록에 없던 항목</span>
+ <span><span class="badge b-buy">구입</span> 이미 산 물건</span>
+ <span>💡 = 예시 보기 (브랜드·메모 칸은 직접 입력, 이 기기에 자동 저장)</span>
 </div>
 
 <div class="warn"><b>안전 주의</b> · 카시트는 제조일 5년 이내 + 사고이력 확인이 어려워 <b>메인 카시트는 신품 권장</b>(바구니형만 중고 고려) · 신생아 <b>목튜브(목 두르는 튜브)는 사용 자제</b> 권고 · 방 온도는 22~24도 유지 · 가격·재고는 구매 전에 직접 확인하세요.</div>
@@ -71,7 +102,15 @@ tr.isrec td:first-child{background:var(--redbg)}
  <button data-f="rec">★ 추천만</button>
  <button data-f="O">당근 O</button>
  <button data-f="X">당근 X(새제품)</button>
+ <button data-f="B">구입</button>
 </div>
+
+<!-- 예시를 보여주는 팝업 -->
+<dialog id="dlg">
+ <div class="dlg-h"><span id="dlgT"></span><small id="dlgS"></small></div>
+ <div class="dlg-b" id="dlgB"></div>
+ <div class="dlg-f"><button id="dlgUse" class="pri">예시 그대로 넣기</button><button id="dlgX">닫기</button></div>
+</dialog>
 
 <div id="root"></div>
 
@@ -148,27 +187,107 @@ const D=[
 
 const root=document.getElementById('root');
 let filter='all'; // 지금 선택된 필터
-// 당근 구분에 맞는 배지 만들기
-function badge(u){return u==='O'?'<span class="badge b-ok">당근 O</span>':u==='X'?'<span class="badge b-no">당근 X</span>':'<span class="badge b-na">추가</span>'}
+// 내가 입력한 값은 이 브라우저(localStorage)에 저장해 둔다
+const KEY='baby-items-v1';
+let state={};
+try{state=JSON.parse(localStorage.getItem(KEY))||{}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+// i번째 품목의 현재 값 (구분 g, 브랜드 b, 구입처 s, 메모 m). 구분은 처음엔 원래 목록 값을 쓴다
+function get(i){const r=L[i].r,s=state[L[i].k]||{};return{g:s.g!==undefined?s.g:(r[2]==='-'?'':r[2]),b:s.b||'',s:s.s||'',m:s.m||''}}
+function set(i,f,v){state[L[i].k]=Object.assign(get(i),{[f]:v});save()}
+// 화면에 쓸 전체 목록 L = 기본 품목 + 내가 추가한 품목 (k는 저장용 이름표, ex는 예시가 있는지)
+const CATS=[...new Set(D.map(r=>r[0]))];
+let L=[];
+function build(){
+  L=D.map(r=>({k:r[1],r:r,ex:true})).concat((state._add||[]).map(a=>({k:'c:'+a.id,r:[a.c,a.n,'-',0,'','',''],ex:false,id:a.id})));
+}
+build();
+function gone(i){return !!(state._del&&state._del[L[i].k])} // 삭제한 품목인지
 // 글자에 섞인 특수문자를 안전하게 바꾸기
-function esc(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+function esc(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+// 구분 선택 상자 만들기
+function sel(i,g){
+  const o=[['','선택'],['X','당근 X'],['O','당근 O'],['B','구입']];
+  return '<select class="sel g-'+g+'" data-i="'+i+'" data-f="g" aria-label="구분">'+o.map(x=>'<option value="'+x[0]+'"'+(x[0]===g?' selected':'')+'>'+x[1]+'</option>').join('')+'</select>';
+}
+// 직접 입력 칸 만들기 (col이 있으면 예시 보기 아이콘도 붙인다)
+function inp(i,f,v,ph,col){
+  return '<div class="cell"><input class="inp" data-i="'+i+'" data-f="'+f+'" value="'+esc(v)+'" placeholder="'+esc(ph)+'">'+(col?'<button class="ex" data-i="'+i+'" data-f="'+f+'" data-c="'+col+'" title="예시 보기" aria-label="예시 보기">💡</button>':'')+'</div>';
+}
 // 필터에 맞는 항목만 골라 카테고리별 표로 그리기
 function render(){
-  const cats=[...new Set(D.map(r=>r[0]))];
   root.innerHTML='';
   let any=false;
-  cats.forEach(c=>{
-    let rows=D.filter(r=>r[0]===c);
-    rows=rows.filter(r=>filter==='all'||(filter==='rec'&&r[3])||(filter==='O'&&r[2]==='O')||(filter==='X'&&r[2]==='X'));
-    if(!rows.length)return;
+  CATS.forEach((c,ci)=>{
+    let rows=L.map((x,i)=>i).filter(i=>L[i].r[0]===c&&!gone(i));
+    rows=rows.filter(i=>filter==='all'||(filter==='rec'&&L[i].r[3])||get(i).g===filter);
+    // 전체 보기에서는 항목이 없어도 카테고리를 보여줘서 새로 추가할 수 있게 한다
+    if(!rows.length&&filter!=='all')return;
     any=true;
     const sec=document.createElement('section');
-    sec.innerHTML='<h2>'+c+' <span class="note">('+rows.length+')</span></h2><table><thead><tr><th>품목</th><th>구분</th><th>제조사 · 브랜드</th><th>구입처</th><th>메모</th></tr></thead><tbody>'+
-    rows.map(r=>'<tr class="'+(r[3]?'isrec':'')+'"><td><span class="item '+(r[3]?'rec':'')+'">'+(r[3]?'★ ':'')+esc(r[1])+'</span></td><td data-l="구분">'+badge(r[2])+'</td><td data-l="브랜드">'+esc(r[4])+'</td><td data-l="구입처">'+esc(r[5])+'</td><td class="note">'+esc(r[6])+'</td></tr>').join('')+'</tbody></table>';
+    sec.innerHTML='<h2>'+c+' <span class="note">('+rows.length+')</span></h2><table><thead><tr><th>품목</th><th>구분</th><th>제조사 · 브랜드</th><th>구입처</th><th>메모</th><th></th></tr></thead><tbody>'+
+    rows.map(i=>{const r=L[i].r,v=get(i),e=L[i].ex;return '<tr class="'+(r[3]?'isrec':'')+'"><td><span class="item '+(r[3]?'rec':'')+'">'+(r[3]?'★ ':'')+esc(r[1])+'</span></td><td data-l="구분">'+sel(i,v.g)+'</td><td data-l="브랜드">'+inp(i,'b',v.b,'직접 입력',e?4:0)+'</td><td data-l="구입처">'+inp(i,'s',v.s,'직접 입력',0)+'</td><td data-l="메모">'+inp(i,'m',v.m,'직접 입력',e?6:0)+'</td><td class="delc"><button class="del" data-i="'+i+'" title="이 항목 삭제" aria-label="'+esc(r[1])+' 삭제">✕</button></td></tr>'}).join('')+'</tbody></table>'+
+    '<div class="addrow"><input class="inp addname" data-c="'+ci+'" placeholder="새 품목 이름" aria-label="새 품목 이름"><button class="addbtn" data-c="'+ci+'">＋ 항목 추가</button></div>';
     root.appendChild(sec);
   });
   if(!any)root.innerHTML='<div class="empty">해당 항목이 없습니다.</div>';
+  // 삭제한 기본 항목이 있으면 되살리기 버튼을 보여준다
+  const n=L.filter((x,i)=>gone(i)).length;
+  if(n){const d=document.createElement('div');d.className='restore';d.innerHTML='<button id="restore">삭제한 기본 항목 '+n+'개 되살리기</button>';root.appendChild(d)}
 }
+// 새 품목 추가
+function addItem(ci,box){
+  const n=box.value.trim();if(!n){box.focus();return}
+  (state._add=state._add||[]).push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),c:CATS[ci],n:n});
+  save();build();render();
+  const nb=root.querySelector('.addname[data-c="'+ci+'"]');if(nb)nb.focus();
+}
+// 항목 삭제 (내가 추가한 항목은 완전히 지우고, 기본 항목은 숨겨 두어 되살릴 수 있게 한다)
+function delItem(i){
+  const it=L[i];
+  if(!confirm("'"+it.r[1]+"' 항목을 삭제할까요?"))return;
+  if(it.ex){(state._del=state._del||{})[it.k]=1}
+  else{state._add=state._add.filter(a=>a.id!==it.id);delete state[it.k]}
+  save();build();render();
+}
+root.addEventListener('click',e=>{
+  const t=e.target;
+  if(t.closest('.addbtn')){const b=t.closest('.addbtn');addItem(+b.dataset.c,b.parentNode.querySelector('.addname'))}
+  else if(t.closest('.del'))delItem(+t.closest('.del').dataset.i);
+  else if(t.id==='restore'){state._del={};save();render()}
+});
+// 새 품목 이름 칸에서 엔터를 눌러도 추가
+root.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&e.target.classList.contains('addname'))addItem(+e.target.dataset.c,e.target);
+});
+// 입력하거나 구분을 바꾸면 바로 저장
+root.addEventListener('input',e=>{
+  const t=e.target;if(!t.dataset.f)return;
+  set(+t.dataset.i,t.dataset.f,t.value);
+  if(t.dataset.f==='g')t.className='sel g-'+t.value;
+});
+// 💡 아이콘을 누르면 예시 팝업 열기
+const dlg=document.getElementById('dlg');
+let cur=null; // 팝업이 가리키는 칸
+root.addEventListener('click',e=>{
+  const b=e.target.closest('.ex');if(!b)return;
+  const r=L[+b.dataset.i].r;
+  cur=b;
+  document.getElementById('dlgT').textContent='예시 · '+r[1];
+  document.getElementById('dlgS').textContent=b.dataset.f==='b'?'제조사 · 브랜드':'메모';
+  document.getElementById('dlgB').textContent=r[+b.dataset.c];
+  dlg.showModal();
+});
+document.getElementById('dlgX').addEventListener('click',()=>dlg.close());
+// 예시 내용을 입력 칸에 그대로 넣기
+document.getElementById('dlgUse').addEventListener('click',()=>{
+  const i=+cur.dataset.i,box=cur.parentNode.querySelector('.inp');
+  box.value=L[i].r[+cur.dataset.c];
+  set(i,cur.dataset.f,box.value);
+  dlg.close();
+});
+// 팝업 바깥(어두운 부분)을 눌러도 닫기
+dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.close()});
 // 필터 버튼을 누르면 다시 그리기
 document.getElementById('filters').addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
