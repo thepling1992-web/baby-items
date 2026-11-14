@@ -60,7 +60,14 @@ tr.isrec td:first-child{background:var(--redbg)}
 .addrow{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--line);background:#fcfaf7}
 .addbtn,.restore button{flex:none;border:1px solid var(--line);background:var(--card);padding:5px 14px;border-radius:20px;font:inherit;font-size:13px;cursor:pointer;white-space:nowrap}
 .addbtn:hover,.restore button:hover{background:#f4efe8}
-.restore{text-align:center;margin-bottom:18px}
+/* 삭제한 항목을 보여주는 추천 줄 */
+.recs{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;padding:10px 12px;border-top:1px dashed var(--line);background:#fcfaf7}
+.recs .note{width:100%}
+.chip{display:inline-flex;border:1px solid var(--line);border-radius:20px;background:var(--card);overflow:hidden}
+.chip button{border:none;background:none;padding:4px 12px;font:inherit;font-size:13px;cursor:pointer;color:var(--ink)}
+.chip button:hover{background:#f4efe8}
+.chip .kill{padding:4px 9px;border-left:1px solid var(--line);color:var(--mute);font-size:11px}
+.chip .kill:hover{background:var(--redbg);color:var(--red)}
 /* 예시 보기 아이콘과 팝업 */
 .ex{flex:none;width:26px;height:26px;border-radius:50%;border:1px solid var(--line);background:#f4efe8;cursor:pointer;font-size:13px;line-height:1;padding:0}
 .ex:hover{background:#eadfce}
@@ -246,13 +253,16 @@ function render(){
     const sec=document.createElement('section');
     sec.innerHTML='<h2>'+c+' <span class="note">('+rows.length+')</span></h2><table><thead><tr><th>품목</th><th>구분</th><th>제조사 · 브랜드</th><th>구입처</th><th>메모</th><th></th></tr></thead><tbody>'+
     rows.map(i=>{const r=L[i].r,v=get(i),e=L[i].ex;return '<tr class="'+(r[3]?'isrec':'')+'"><td><span class="item '+(r[3]?'rec':'')+'">'+(r[3]?'★ ':'')+esc(r[1])+'</span></td><td data-l="구분">'+sel(i,v.g)+'</td><td data-l="브랜드">'+inp(i,'b',v.b,'직접 입력',e?4:0)+'</td><td data-l="구입처">'+inp(i,'s',v.s,'직접 입력',0)+'</td><td data-l="메모">'+inp(i,'m',v.m,'직접 입력',e?6:0)+'</td><td class="delc"><button class="del" data-i="'+i+'" title="이 항목 삭제" aria-label="'+esc(r[1])+' 삭제">✕</button></td></tr>'}).join('')+'</tbody></table>'+
-    '<div class="addrow"><input class="inp addname" data-c="'+ci+'" placeholder="새 품목 이름" aria-label="새 품목 이름"><button class="addbtn" data-c="'+ci+'">＋ 항목 추가</button></div>';
+    '<div class="addrow"><input class="inp addname" data-c="'+ci+'" placeholder="새 품목 이름" aria-label="새 품목 이름"><button class="addbtn" data-c="'+ci+'">＋ 항목 추가</button></div>'+recs(c);
     root.appendChild(sec);
   });
   if(!any)root.innerHTML='<div class="empty">해당 항목이 없습니다.</div>';
-  // 삭제한 기본 항목이 있으면 되살리기 버튼을 보여준다
-  const n=L.filter((x,i)=>gone(i)).length;
-  if(n){const d=document.createElement('div');d.className='restore';d.innerHTML='<button id="restore">삭제한 기본 항목 '+n+'개 되살리기</button>';root.appendChild(d)}
+}
+// 이 카테고리에서 삭제한 항목들을 "추천"으로 보여준다 (누르면 다시 추가)
+function recs(c){
+  const d=L.map((x,i)=>i).filter(i=>L[i].r[0]===c&&gone(i));
+  if(!d.length)return '';
+  return '<div class="recs"><span class="note">추천 · 삭제한 항목 (누르면 다시 추가)</span>'+d.map(i=>'<span class="chip"><button class="back" data-i="'+i+'">＋ '+esc(L[i].r[1])+'</button>'+(L[i].ex?'':'<button class="kill" data-i="'+i+'" title="완전히 지우기" aria-label="'+esc(L[i].r[1])+' 완전히 지우기">✕</button>')+'</span>').join('')+'</div>';
 }
 // 새 품목 추가
 function addItem(ci,box){
@@ -261,19 +271,28 @@ function addItem(ci,box){
   save();build();render();
   const nb=root.querySelector('.addname[data-c="'+ci+'"]');if(nb)nb.focus();
 }
-// 항목 삭제 (내가 추가한 항목은 완전히 지우고, 기본 항목은 숨겨 두어 되살릴 수 있게 한다)
+// 항목 삭제: 목록에서 빼서 카테고리 아래 "추천"으로 옮긴다 (입력해 둔 내용은 그대로 보관)
 function delItem(i){
   const it=L[i];
-  if(!confirm("'"+it.r[1]+"' 항목을 삭제할까요?"))return;
-  if(it.ex){(state._del=state._del||{})[it.k]=1}
-  else{state._add=state._add.filter(a=>a.id!==it.id);delete state[it.k]}
+  if(!confirm("'"+it.r[1]+"' 항목을 삭제할까요?\n(카테고리 아래 추천에 남아 다시 추가할 수 있습니다)"))return;
+  (state._del=state._del||{})[it.k]=1;
+  save();render();
+}
+// 추천에서 다시 목록으로 되돌리기
+function backItem(i){delete state._del[L[i].k];save();render()}
+// 내가 추가했던 항목을 추천에서도 완전히 지우기
+function killItem(i){
+  const it=L[i];
+  if(!confirm("'"+it.r[1]+"' 항목을 완전히 지울까요? 되돌릴 수 없습니다."))return;
+  state._add=(state._add||[]).filter(a=>a.id!==it.id);delete state[it.k];delete state._del[it.k];
   save();build();render();
 }
 root.addEventListener('click',e=>{
   const t=e.target;
   if(t.closest('.addbtn')){const b=t.closest('.addbtn');addItem(+b.dataset.c,b.parentNode.querySelector('.addname'))}
   else if(t.closest('.del'))delItem(+t.closest('.del').dataset.i);
-  else if(t.id==='restore'){state._del={};save();render()}
+  else if(t.closest('.back'))backItem(+t.closest('.back').dataset.i);
+  else if(t.closest('.kill'))killItem(+t.closest('.kill').dataset.i);
 });
 // 새 품목 이름 칸에서 엔터를 눌러도 추가
 root.addEventListener('keydown',e=>{
