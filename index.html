@@ -48,6 +48,11 @@ tr.isrec td:first-child{background:var(--redbg)}
 .sel.g-X{background:var(--nobg);color:var(--no)}
 .sel.g-B{background:var(--buybg);color:var(--buy)}
 .b-buy{background:var(--buybg);color:var(--buy)}
+/* 저장 링크 버튼 줄 */
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:-6px 0 18px}
+.tools button{border:1px solid var(--line);background:var(--card);padding:6px 14px;border-radius:20px;font:inherit;font-size:13px;cursor:pointer}
+.tools button:hover{background:#f4efe8}
+#d2A{display:block;width:100%;margin-top:10px;border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit;font-size:12px;word-break:break-all;resize:vertical}
 /* 항목 추가 · 삭제 */
 .del{width:26px;height:26px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--mute);cursor:pointer;font-size:12px;line-height:1;padding:0}
 .del:hover{background:var(--redbg);color:var(--red);border-color:#fecdca}
@@ -104,6 +109,20 @@ dialog::backdrop{background:rgba(43,38,34,.4)}
  <button data-f="X">당근 X(새제품)</button>
  <button data-f="B">구입</button>
 </div>
+
+<!-- 내 목록을 링크로 보관하고 다시 불러오는 버튼 -->
+<div class="tools">
+ <button id="btnCopy">🔗 저장 링크 복사</button>
+ <button id="btnPaste">📥 링크 붙여넣어 불러오기</button>
+ <span class="note">내용이 지워질 때를 대비해, 복사한 링크를 메모장이나 카톡에 보관해 두세요.</span>
+</div>
+
+<!-- 링크 복사 · 붙여넣기 팝업 -->
+<dialog id="dlg2">
+ <div class="dlg-h" id="d2T"></div>
+ <div class="dlg-b"><div id="d2M"></div><textarea id="d2A" rows="5" aria-label="저장 링크"></textarea></div>
+ <div class="dlg-f"><button id="d2Go" class="pri"></button><button id="d2X">닫기</button></div>
+</dialog>
 
 <!-- 예시를 보여주는 팝업 -->
 <dialog id="dlg">
@@ -295,6 +314,56 @@ document.getElementById('filters').addEventListener('click',e=>{
   document.querySelectorAll('#filters button').forEach(x=>x.classList.toggle('on',x===b));
   render();
 });
+
+// ───── 저장 링크: 내 목록 전체를 링크 한 줄에 담아 보관하고, 다시 불러온다 ─────
+// 내용을 링크에 넣을 수 있는 글자로 바꾸기 / 되돌리기
+function enc(o){let s='';new TextEncoder().encode(JSON.stringify(o)).forEach(x=>s+=String.fromCharCode(x));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function dec(t){const s=atob(t.replace(/-/g,'+').replace(/_/g,'/'));return JSON.parse(new TextDecoder().decode(Uint8Array.from(s,c=>c.charCodeAt(0))))}
+function makeLink(){return location.href.split('#')[0]+'#d='+enc(state)}
+// 링크(글자) 안의 내용을 꺼내 화면에 적용. 결과: 'ok' 적용함 / 'cancel' 취소함 / 'bad' 올바른 링크가 아님
+function applyLink(txt,ask){
+  const m=/#d=([A-Za-z0-9_-]+)/.exec(txt);if(!m)return 'bad';
+  let o;try{o=dec(m[1])}catch(e){return 'bad'}
+  if(!o||typeof o!=='object'||Array.isArray(o))return 'bad';
+  if(!Array.isArray(o._add))delete o._add;
+  if(o._del&&typeof o._del!=='object')delete o._del;
+  if(ask&&Object.keys(state).length&&JSON.stringify(state)!==JSON.stringify(o)&&!confirm('지금 화면의 내용을 링크에 담긴 내용으로 바꿀까요?'))return 'cancel';
+  state=o;save();build();render();return 'ok';
+}
+const dlg2=document.getElementById('dlg2'),d2A=document.getElementById('d2A'),d2M=document.getElementById('d2M'),d2Go=document.getElementById('d2Go');
+let mode='copy';
+function copyNow(){
+  d2A.select();
+  const done=()=>{d2M.textContent='링크를 복사했습니다. 메모장이나 카톡(나에게 보내기)에 붙여넣어 보관하세요. 내용을 고친 뒤에는 다시 복사해야 최신 내용이 담깁니다.'};
+  const fail=()=>{d2M.textContent='자동 복사가 안 됐습니다. 아래 링크를 직접 길게 눌러(또는 Ctrl+C) 복사하세요.'};
+  try{navigator.clipboard.writeText(d2A.value).then(done,fail)}catch(e){fail()}
+}
+document.getElementById('btnCopy').addEventListener('click',()=>{
+  mode='copy';
+  document.getElementById('d2T').textContent='🔗 저장 링크 복사';
+  d2A.value=makeLink();d2A.readOnly=true;d2Go.textContent='다시 복사';d2M.textContent='';
+  dlg2.showModal();copyNow();
+});
+document.getElementById('btnPaste').addEventListener('click',()=>{
+  mode='paste';
+  document.getElementById('d2T').textContent='📥 링크 붙여넣어 불러오기';
+  d2A.value='';d2A.readOnly=false;d2Go.textContent='불러오기';
+  d2M.textContent='보관해 둔 저장 링크를 아래 칸에 붙여넣고 [불러오기]를 누르세요.';
+  dlg2.showModal();d2A.focus();
+});
+d2Go.addEventListener('click',()=>{
+  if(mode==='copy'){copyNow();return}
+  const r=applyLink(d2A.value,true);
+  if(r==='ok')dlg2.close();
+  else if(r==='bad')d2M.textContent='올바른 저장 링크가 아닙니다. 링크 전체를 빠짐없이 붙여넣었는지 확인해 주세요.';
+});
+document.getElementById('d2X').addEventListener('click',()=>dlg2.close());
+dlg2.addEventListener('click',e=>{if(e.target===dlg2)dlg2.close()});
+// 저장 링크로 바로 접속한 경우: 링크의 내용을 불러오고 주소창은 원래 주소로 정리
+if(location.hash.indexOf('#d=')===0){
+  applyLink(location.hash,true);
+  try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}
+}
 render();
 </script>
 </body>
